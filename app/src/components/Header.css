@@ -1,5 +1,5 @@
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1b263b 0%, #415a77 100%);
   color: white;
   position: sticky;
   top: 0;
@@ -105,7 +105,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  background: #5a4a9a;
+  background: rgba(65, 90, 119, 0.85);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
   padding: 0.5rem 1.5rem 0.75rem;

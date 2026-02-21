@@ -1,15 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './Header.css'
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setMenuOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <header className="header">
       <div className="header-inner">
         <div className="header-brand">
-          <h1>NCT Stats Ireland</h1>
+          <h1>NCT Stats</h1>
         </div>
 
         <button
