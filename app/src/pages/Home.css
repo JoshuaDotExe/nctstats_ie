@@ -1,0 +1,28 @@
+.home {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.home-chart-container {
+  width: 66.66%;
+  margin: 2rem auto 0;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: light) {
+  .home-chart-container {
+    background-color: #ffffff;
+    border-color: #ddd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media (max-width: 768px) {
+  .home-chart-container {
+    width: 100%;
+  }
+}
