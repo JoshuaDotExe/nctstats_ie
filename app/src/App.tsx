@@ -1,21 +1,20 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
-import Navigation from './components/Navigation'
+import Home from './pages/Home'
+import About from './pages/About'
 import './App.css'
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
       <Header />
-      <Navigation />
-      <main>
-        <h2>Welcome to NCT Stats Ireland</h2>
-        <div className="card">
-          <p>
-            Start building your NCT statistics website here!
-          </p>
-        </div>
-      </main>
-    </>
+      <div className="page-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   )
 }
 

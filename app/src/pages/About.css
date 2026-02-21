@@ -1,0 +1,52 @@
+.about {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.about-hero {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+}
+
+.about-hero h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.about-hero p {
+  font-size: 1.1rem;
+  opacity: 0.75;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 0 3rem;
+}
+
+.about-card {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.about-card h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.about-card p {
+  margin: 0;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+@media (prefers-color-scheme: light) {
+  .about-card {
+    background-color: #f9f9f9;
+    border-color: #ddd;
+  }
+}
