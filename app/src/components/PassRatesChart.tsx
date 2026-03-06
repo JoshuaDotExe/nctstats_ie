@@ -31,6 +31,7 @@ function PassRatesChart({
       textStyle: {
         color: '#ccc',
       },
+      padding: [0, 0, 10, 0],
     },
     tooltip: {
       trigger: 'axis',
@@ -42,7 +43,7 @@ function PassRatesChart({
       },
     },
     legend: {
-      top: 30,
+      top: 40,
       textStyle: {
         color: '#aaa',
       },
@@ -77,24 +78,25 @@ function PassRatesChart({
       data: s.data,
       lineStyle: { width: 3 },
       itemStyle: { color: s.color },
-      ...(s.areaFill && {
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: s.color.replace(')', ', 0.3)').replace('rgb', 'rgba') },
-              { offset: 1, color: s.color.replace(')', ', 0.02)').replace('rgb', 'rgba') },
-            ],
-          },
-        },
-      }),
+      areaStyle: s.areaFill
+        ? {
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: s.color.replace(')', ', 0.3)').replace('rgb', 'rgba') },
+                { offset: 1, color: s.color.replace(')', ', 0.02)').replace('rgb', 'rgba') },
+              ],
+            },
+          }
+        : undefined,
     })),
   }
 
   return (
     <ReactECharts
       option={chartOptions}
+      notMerge={true}
       style={{ height, width: '100%' }}
     />
   )
