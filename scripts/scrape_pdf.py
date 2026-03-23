@@ -236,6 +236,7 @@ def main():
     else:
         pdf_path = os.path.join(
             os.path.dirname(__file__),
+            "..",
             "data",
             "2016",
             "2016-Make-Model-Data-(pdf).pdf",

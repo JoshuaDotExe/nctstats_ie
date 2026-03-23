@@ -21,8 +21,8 @@ ROOT = Path(__file__).parent.parent
 DATA_DIR = ROOT / "data"
 OUTPUT_PATH = DATA_DIR / "model_lookup.json"
 
-# JSON files to scan
-JSON_FILES = [DATA_DIR / "2016" / "2016-Make-Model-Data-(pdf)_uneditied.json"]
+# JSON files to scan — all canonical Make-Model-Data files across every year
+JSON_FILES = sorted(DATA_DIR.glob("*/*-Make-Model-Data.json"))
 
 # ── Normalisation helpers ──────────────────────────────────────────────────────
 

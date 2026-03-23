@@ -17,6 +17,7 @@
   margin-bottom: 2rem;
 }
 
+/* .search-field is used only for the Test Year input now */
 .search-field {
   display: flex;
   flex-direction: column;
@@ -35,7 +36,13 @@
   background: #2a2a2a;
   color: #eee;
   font-size: 1rem;
-  width: 180px;
+  width: 140px;
+  transition: border-color 0.15s;
+}
+
+.search-field input:focus {
+  outline: none;
+  border-color: #667eea;
 }
 
 .search-field input::placeholder {
@@ -70,6 +77,55 @@
 .search-empty {
   color: #888;
   font-style: italic;
+}
+
+/* View mode toggle */
+.view-mode-toggle {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.view-mode-label {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.view-mode-options {
+  display: flex;
+  border: 1px solid #444;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-mode-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  background: #2a2a2a;
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-mode-btn + .view-mode-btn {
+  border-left: 1px solid #444;
+}
+
+.view-mode-btn:hover {
+  color: #ccc;
+}
+
+.view-mode-btn.active {
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Test year selector (compare mode) */
+.test-year-selector {
+  margin-bottom: 1.5rem;
 }
 
 .search-chart-container {
@@ -107,6 +163,12 @@
 .metric-btn:hover {
   border-color: #667eea;
   color: #ccc;
+}
+
+.metric-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .metric-btn.active {

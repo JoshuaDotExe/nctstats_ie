@@ -5,6 +5,7 @@ interface ChartSeries {
   data: number[]
   color: string
   areaFill?: boolean
+  dashed?: boolean
 }
 
 interface PassRatesChartProps {
@@ -14,6 +15,8 @@ interface PassRatesChartProps {
   height?: string
   yMin?: number
   yMax?: number
+  /** 'pct' shows % suffix; 'count' shows raw numbers with no suffix */
+  yUnit?: 'pct' | 'count'
 }
 
 function PassRatesChart({
@@ -21,8 +24,9 @@ function PassRatesChart({
   labels,
   series,
   height = '450px',
-  yMin = 40,
-  yMax = 100,
+  yMin,
+  yMax,
+  yUnit = 'pct',
 }: PassRatesChartProps) {
   const chartOptions = {
     title: {
@@ -37,7 +41,7 @@ function PassRatesChart({
       trigger: 'axis',
       formatter: (params: { name: string; value: number; seriesName: string }[]) => {
         const lines = params.map(
-          (p) => `${p.seriesName}: <strong>${p.value}%</strong>`
+          (p) => `${p.seriesName}: <strong>${p.value}${yUnit === 'pct' ? '%' : ''}</strong>`
         )
         return `<strong>${params[0].name}</strong><br/>${lines.join('<br/>')}`
       },
@@ -63,10 +67,10 @@ function PassRatesChart({
     },
     yAxis: {
       type: 'value' as const,
-      min: yMin,
-      max: yMax,
+      ...(yMin !== undefined ? { min: yMin } : {}),
+      ...(yMax !== undefined ? { max: yMax } : {}),
       axisLabel: {
-        formatter: '{value}%',
+        formatter: yUnit === 'pct' ? '{value}%' : '{value}',
         color: '#aaa',
       },
       splitLine: { lineStyle: { color: '#333' } },
@@ -76,8 +80,9 @@ function PassRatesChart({
       type: 'line',
       smooth: true,
       data: s.data,
-      lineStyle: { width: 3 },
+      lineStyle: { width: s.dashed ? 2 : 3, type: s.dashed ? 'dashed' : 'solid' },
       itemStyle: { color: s.color },
+      symbolSize: s.dashed ? 0 : 4,
       areaStyle: s.areaFill
         ? {
             color: {

@@ -1,0 +1,92 @@
+.combobox-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.combobox-field label {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.combobox-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.combobox-input-wrap input {
+  padding: 0.5rem 2rem 0.5rem 0.75rem; /* right padding for clear btn */
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #eee;
+  font-size: 1rem;
+  width: 180px;
+  transition: border-color 0.15s;
+}
+
+.combobox-input-wrap input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.combobox-input-wrap input::placeholder {
+  color: #666;
+}
+
+.combobox-clear {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  transition: color 0.15s;
+}
+
+.combobox-clear:hover {
+  color: #ccc;
+}
+
+.combobox-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.25rem 0;
+  margin: 0;
+  list-style: none;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.combobox-option {
+  padding: 0.45rem 0.8rem;
+  color: #ccc;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.combobox-option:hover,
+.combobox-option.active {
+  background: #2e2e5e;
+  color: #fff;
+}
+
+.combobox-option mark {
+  background: none;
+  color: #667eea;
+  font-weight: 700;
+}
