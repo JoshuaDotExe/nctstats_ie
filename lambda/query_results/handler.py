@@ -1,6 +1,10 @@
 """
 Lambda handler for querying NCT results from DynamoDB.
 
+New compact format:
+  Each item has  pk = "MODEL#<MAKE>#<MODEL>", sk = "TEST_YEAR#<year>"
+  with a list attribute "d" containing base64-encoded percentage strings.
+
 Endpoints:
   GET /results?make=FORD&model=FOCUS           → all test years for a model
   GET /results?make=FORD&model=FOCUS&year=2016  → specific test year for a model
@@ -9,18 +13,9 @@ Endpoints:
 import json
 import os
 import boto3
-from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "eu-west-1"))
 table = dynamodb.Table(os.environ.get("TABLE_NAME", "nct_results"))
-
-
-class DecimalEncoder(json.JSONEncoder):
-    """Handle Decimal types returned by DynamoDB."""
-    def default(self, o):
-        if isinstance(o, Decimal):
-            return int(o) if o % 1 == 0 else float(o)
-        return super().default(o)
 
 
 def build_response(status_code, body):
@@ -32,7 +27,7 @@ def build_response(status_code, body):
             "Access-Control-Allow-Methods": "GET,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
         },
-        "body": json.dumps(body, cls=DecimalEncoder),
+        "body": json.dumps(body),
     }
 
 
@@ -49,12 +44,12 @@ def handler(event, context):
 
     try:
         if year:
-            # Query a specific test year
+            # Query a specific test year (exact SK match)
             response = table.query(
-                KeyConditionExpression="pk = :pk AND begins_with(sk, :skprefix)",
+                KeyConditionExpression="pk = :pk AND sk = :sk",
                 ExpressionAttributeValues={
                     ":pk": pk,
-                    ":skprefix": f"TEST_YEAR#{year}#",
+                    ":sk": f"TEST_YEAR#{year}",
                 },
             )
         else:
