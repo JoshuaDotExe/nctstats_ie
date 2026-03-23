@@ -19,12 +19,11 @@ function Search() {
   const [year, setYear] = useState('')
   const [selectedCarYears, setSelectedCarYears] = useState<[number, number] | null>(null)
   const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(new Set(['P', 'F']))
-  const [displayMode, setDisplayMode] = useState<'pct-total' | 'pct-fail' | 'count'>('pct-total')
   const [viewMode, setViewMode] = useState<'single' | 'compare'>('single')
   const [compareMetric, setCompareMetric] = useState<string>('P')
   const [selectedTestYears, setSelectedTestYears] = useState<Set<number>>(new Set())
   const [showAverage, setShowAverage] = useState(false)
-  const { results, loading, error, query } = useNctResults()
+  const { results, loading, error, query, clear } = useNctResults()
   const { makes, modelsFor } = useSearchIndex()
   const { load: loadAverages, getAvg } = useAverages()
   const modelOptions = useMemo(() => modelsFor(make), [make, modelsFor])
@@ -82,7 +81,6 @@ function Search() {
 
   // All car years available in results
   const allCarYears = results
-    .filter((r) => r.T > 0)
     .map((r) => r.car_year)
     .sort((a, b) => a - b)
 
@@ -115,9 +113,6 @@ function Search() {
     })
   }
 
-  // The failure category count keys (excludes T, P, F)
-  const FAILURE_COUNT_KEYS = ['Sa', 'Li', 'St', 'Br', 'Wh', 'En', 'Ch', 'Ss', 'Su', 'Lt', 'Bk', 'Em', 'Ot', 'In']
-
   // Build compare chart: one line per test year for the selected metric
   const compareChartData = useMemo(() => {
     if (viewMode !== 'compare') return { labels: [] as string[], series: [] as { name: string; data: number[]; color: string }[] }
@@ -126,7 +121,6 @@ function Search() {
     const byTestYear = new Map<number, NctResult[]>()
     for (const r of results) {
       if (!activeTestYears.has(r.test_year)) continue
-      if (r.T <= 0) continue
       if (r.car_year < rangeMin || r.car_year > rangeMax) continue
       if (!byTestYear.has(r.test_year)) byTestYear.set(r.test_year, [])
       byTestYear.get(r.test_year)!.push(r)
@@ -151,36 +145,34 @@ function Search() {
         data: carYearsArr.map((cy) => {
           const r = rowMap.get(cy)
           if (!r) return null as unknown as number // gap in data
-          const val = r[key as keyof NctResult] as number
-          if (displayMode === 'count') return val
-          const denom = (key === 'P' || key === 'F' || displayMode === 'pct-total') ? r.T : r.F
-          return denom > 0 ? Math.round((val / denom) * 1000) / 10 : 0
+          return r[key as keyof NctResult] as number
         }),
         color: TEST_YEAR_COLORS[idx % TEST_YEAR_COLORS.length],
       }
     })
 
     return { labels, series }
-  }, [results, viewMode, activeTestYears, rangeMin, rangeMax, compareMetric, displayMode])
+  }, [results, viewMode, activeTestYears, rangeMin, rangeMax, compareMetric])
 
   // ── Single mode chart data ────────────────────────────────────────────
-  const chartData = results
+  // Guard against stale results from a previous compare-mode fetch
+  const singleModeResults = useMemo(() => {
+    if (viewMode !== 'single') return []
+    return results.filter((r) => String(r.test_year) === year)
+  }, [results, viewMode, year])
+
+  const chartData = singleModeResults
     .sort((a, b) => a.car_year - b.car_year)
-    .filter((r) => r.T > 0 && r.car_year >= rangeMin && r.car_year <= rangeMax)
+    .filter((r) => r.car_year >= rangeMin && r.car_year <= rangeMax)
 
   const chartLabels = chartData.map((r) => String(r.car_year))
 
-  // In count mode show all failure categories; otherwise use selected metrics
-  const activeMetricKeys = displayMode === 'count' ? FAILURE_COUNT_KEYS : Array.from(selectedMetrics)
+  // Always use selected metrics — values are already percentages
+  const activeMetricKeys = Array.from(selectedMetrics)
 
   const chartSeries = activeMetricKeys.map((key) => ({
-    name: displayMode === 'count' ? KEY_LABELS[key] : `${KEY_LABELS[key]} %`,
-    data: chartData.map((r) => {
-      const val = r[key as keyof typeof r] as number
-      if (displayMode === 'count') return val
-      const denom = (key === 'P' || key === 'F' || displayMode === 'pct-total') ? r.T : r.F
-      return denom > 0 ? Math.round((val / denom) * 1000) / 10 : 0
-    }),
+    name: `${KEY_LABELS[key]} %`,
+    data: chartData.map((r) => r[key as keyof typeof r] as number),
     color: METRIC_COLORS[key] || '#667eea',
   }))
 
@@ -188,20 +180,18 @@ function Search() {
   const avgSeries = useMemo(() => {
     if (!showAverage || viewMode !== 'single' || !year) return []
     return activeMetricKeys.map((key) => ({
-      name: `Avg ${KEY_LABELS[key]}${displayMode === 'count' ? '' : ' %'}`,
+      name: `Avg ${KEY_LABELS[key]} %`,
       data: chartData.map((r) => {
         const avg = getAvg(year, r.car_year)
         if (!avg) return null as unknown as number
-        if (displayMode === 'count') return avg[key] ?? 0
         const avgVal = avg[key] ?? 0
-        const denom = (key === 'P' || key === 'F' || displayMode === 'pct-total')
-          ? avg['T'] : avg['F']
+        const denom = (key === 'P' || key === 'F') ? avg['T'] : avg['T']
         return denom > 0 ? Math.round((avgVal / denom) * 1000) / 10 : 0
       }),
       color: METRIC_COLORS[key] ? METRIC_COLORS[key] + '88' : '#aaaaaa',
       dashed: true,
     }))
-  }, [showAverage, viewMode, year, activeMetricKeys, chartData, getAvg, displayMode])
+  }, [showAverage, viewMode, year, activeMetricKeys, chartData, getAvg])
 
   return (
     <div className="search">
@@ -251,14 +241,14 @@ function Search() {
           <button
             type="button"
             className={`view-mode-btn ${viewMode === 'single' ? 'active' : ''}`}
-            onClick={() => { setViewMode('single') }}
+            onClick={() => { setViewMode('single'); clear() }}
           >
             Single Test Year
           </button>
           <button
             type="button"
             className={`view-mode-btn ${viewMode === 'compare' ? 'active' : ''}`}
-            onClick={() => { setViewMode('compare'); setYear('') }}
+            onClick={() => { setViewMode('compare'); setYear(''); clear() }}
           >
             Compare Across Years
           </button>
@@ -311,42 +301,14 @@ function Search() {
                     <button
                       key={key}
                       type="button"
-                      disabled={displayMode === 'count'}
-                      className={`metric-btn ${selectedMetrics.has(key) ? 'active' : ''} ${displayMode === 'count' ? 'disabled' : ''}`}
-                      style={selectedMetrics.has(key) && displayMode !== 'count' ? { backgroundColor: color, borderColor: color } : {}}
+                      className={`metric-btn ${selectedMetrics.has(key) ? 'active' : ''}`}
+                      style={selectedMetrics.has(key) ? { backgroundColor: color, borderColor: color } : {}}
                       onClick={() => toggleMetric(key)}
-                      title={displayMode === 'count' ? 'Metric selection disabled in Count mode' : KEY_LABELS[key]}
+                      title={KEY_LABELS[key]}
                     >
                       {KEY_LABELS[key]}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="percent-base-toggle">
-                <span className="percent-base-label">Show values as:</span>
-                <div className="percent-base-options">
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'pct-total' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('pct-total')}
-                  >
-                    % of Total Tests
-                  </button>
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'pct-fail' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('pct-fail')}
-                  >
-                    % of Fails
-                  </button>
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'count' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('count')}
-                  >
-                    Count
-                  </button>
                 </div>
               </div>
 
@@ -366,12 +328,12 @@ function Search() {
 
               <div className="search-chart-container">
                 <PassRatesChart
-                  title={`${make.toUpperCase()} ${model.toUpperCase()} — ${displayMode === 'count' ? 'Failure Counts' : 'Stat Rates'} by Car Year`}
+                  title={`${make.toUpperCase()} ${model.toUpperCase()} — Stat Rates by Car Year`}
                   labels={chartLabels}
                   series={[...chartSeries, ...avgSeries]}
-                  yUnit={displayMode === 'count' ? 'count' : 'pct'}
-                  yMin={displayMode === 'count' ? undefined : 0}
-                  yMax={displayMode === 'count' ? undefined : 100}
+                  yUnit="pct"
+                  yMin={0}
+                  yMax={100}
                 />
               </div>
             </>
@@ -398,33 +360,6 @@ function Search() {
                 </div>
               </div>
 
-              <div className="percent-base-toggle">
-                <span className="percent-base-label">Show values as:</span>
-                <div className="percent-base-options">
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'pct-total' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('pct-total')}
-                  >
-                    % of Total Tests
-                  </button>
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'pct-fail' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('pct-fail')}
-                  >
-                    % of Fails
-                  </button>
-                  <button
-                    type="button"
-                    className={`percent-base-btn ${displayMode === 'count' ? 'active' : ''}`}
-                    onClick={() => setDisplayMode('count')}
-                  >
-                    Count
-                  </button>
-                </div>
-              </div>
-
               <div className="test-year-selector">
                 <span className="metric-selector-label">Test years:</span>
                 <div className="metric-selector-options">
@@ -444,12 +379,12 @@ function Search() {
 
               <div className="search-chart-container">
                 <PassRatesChart
-                  title={`${make.toUpperCase()} ${model.toUpperCase()} — ${KEY_LABELS[compareMetric]} ${displayMode === 'count' ? 'Count' : '%'} Across Test Years`}
+                  title={`${make.toUpperCase()} ${model.toUpperCase()} — ${KEY_LABELS[compareMetric]} % Across Test Years`}
                   labels={compareChartData.labels}
                   series={compareChartData.series}
-                  yUnit={displayMode === 'count' ? 'count' : 'pct'}
-                  yMin={displayMode === 'count' ? undefined : 0}
-                  yMax={displayMode === 'count' ? undefined : 100}
+                  yUnit="pct"
+                  yMin={0}
+                  yMax={100}
                 />
               </div>
             </>
@@ -461,43 +396,24 @@ function Search() {
                 <tr>
                   {viewMode === 'compare' && <th>Test Year</th>}
                   <th>Car Year</th>
-                  {displayMode === 'count' ? (
-                    // Count mode: Total + all count fields (no _pct columns)
-                    <>
-                      <th title="Total">Total</th>
-                      {FAILURE_COUNT_KEYS.map((key) => (
-                        <th key={key} title={KEY_LABELS[key]}>{KEY_LABELS[key]}</th>
-                      ))}
-                    </>
-                  ) : (
-                    Object.entries(KEY_LABELS).map(([key, label]) => (
-                      <th key={key} title={label}>{key}</th>
-                    ))
-                  )}
+                  {Object.entries(KEY_LABELS).map(([key, label]) => (
+                    <th key={key} title={label}>{key} %</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {(viewMode === 'compare'
                   ? results
-                      .filter((r) => r.T > 0 && activeTestYears.has(r.test_year) && r.car_year >= rangeMin && r.car_year <= rangeMax)
+                      .filter((r) => activeTestYears.has(r.test_year) && r.car_year >= rangeMin && r.car_year <= rangeMax)
                       .sort((a, b) => a.test_year - b.test_year || a.car_year - b.car_year)
                   : chartData
                 ).map((r) => (
                   <tr key={r.sk}>
                     {viewMode === 'compare' && <td>{r.test_year}</td>}
                     <td>{r.car_year}</td>
-                    {displayMode === 'count' ? (
-                      <>
-                        <td>{r.T}</td>
-                        {FAILURE_COUNT_KEYS.map((key) => (
-                          <td key={key}>{r[key as keyof typeof r] ?? 0}</td>
-                        ))}
-                      </>
-                    ) : (
-                      Object.keys(KEY_LABELS).map((key) => (
-                        <td key={key}>{r[key as keyof typeof r] ?? 0}</td>
-                      ))
-                    )}
+                    {Object.keys(KEY_LABELS).map((key) => (
+                      <td key={key}>{r[key as keyof typeof r] ?? 0}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
